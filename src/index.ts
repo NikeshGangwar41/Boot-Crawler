@@ -46,7 +46,6 @@ export function getURLsFromHTML(html: string, baseURL: string): string[] {
     if (href) {
       try {
         const url = new URL(href, baseURL);
-        console.log(url);
         urls.push(url.href);
       } catch (e) {
         // Ignore invalid URLs
@@ -54,9 +53,28 @@ export function getURLsFromHTML(html: string, baseURL: string): string[] {
     }
   });
 
-  console.log(urls);
-
   return urls;
 }
 
+export function getImagesFromHTML(html: string, baseURL: string): string[] {
+  const dom = new JSDOM(html);
+  const document = dom.window.document;
 
+  const imgTags = document.querySelectorAll("img");
+  const urls: string[] = [];
+
+  imgTags.forEach((img) => {
+    const src = img.getAttribute("src");
+
+    if (!src) return;
+
+    try {
+      const url = new URL(src, baseURL);
+      urls.push(url.href);
+    } catch (e) {
+      // Ignore invalid URLs
+    }
+  });
+
+  return urls;
+}

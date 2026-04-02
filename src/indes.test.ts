@@ -3,6 +3,7 @@ import {
   getHeadingFromHTML,
   getFirstParagraphFromHTML,
   getURLsFromHTML,
+  getImagesFromHTML,
 } from "./index";
 
 describe("getHeadingFromHTML", () => {
@@ -145,6 +146,76 @@ test("getURLsFromHTML ignores anchor without href", () => {
   const baseURL = "https://crawler-test.com";
 
   const actual = getURLsFromHTML(inputHTML, baseURL);
+  const expected: string[] = [];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getImagesFromHTML absolute URLs", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <img src="https://example.com/image.png" />
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getImagesFromHTML(inputHTML, baseURL);
+  const expected = ["https://example.com/image.png"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getImagesFromHTML relative URLs", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <img src="/logo.png" />
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getImagesFromHTML(inputHTML, baseURL);
+  const expected = ["https://crawler-test.com/logo.png"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getImagesFromHTML multiple images", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <img src="/img1.png" />
+        <img src="/img2.png" />
+        <img src="https://example.com/img3.png" />
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getImagesFromHTML(inputHTML, baseURL);
+  const expected = [
+    "https://crawler-test.com/img1.png",
+    "https://crawler-test.com/img2.png",
+    "https://example.com/img3.png",
+  ];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getImagesFromHTML ignores img without src", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <img alt="no src" />
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getImagesFromHTML(inputHTML, baseURL);
   const expected: string[] = [];
 
   expect(actual).toEqual(expected);
