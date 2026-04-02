@@ -1,4 +1,4 @@
-import { crawlPage } from "./crawl";
+import { crawlSiteAsync } from "./crawl";
 
 async function main() {
   const args = process.argv.slice(2); // skip "node" and "src/index.ts"
@@ -13,11 +13,10 @@ async function main() {
     process.exit(1);
   }
 
-
   const baseURL = args[0];
   console.log(`Starting crawl of: ${baseURL}`);
 
-  const pages = await crawlPage(baseURL);
+  const pages = await crawlSiteAsync(baseURL, 3);
 
   console.log("\nCrawl result:");
   console.log(pages);
