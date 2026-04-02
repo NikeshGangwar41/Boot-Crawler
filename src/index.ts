@@ -1,4 +1,5 @@
 import { JSDOM } from "jsdom";
+import { get } from "node:http";
 
 export function getHeadingFromHTML(html: string): string {
   const dom = new JSDOM(html);
@@ -33,3 +34,29 @@ export function getFirstParagraphFromHTML(html: string): string {
 
   return "";
 }
+
+export function getURLsFromHTML(html: string, baseURL: string): string[] {
+  const dom = new JSDOM(html);
+  const document = dom.window.document;
+  const anchorTags = document.querySelectorAll("a");
+  const urls: string[] = [];
+
+  anchorTags.forEach((anchor) => {
+    const href = anchor.getAttribute("href");
+    if (href) {
+      try {
+        const url = new URL(href, baseURL);
+        console.log(url);
+        urls.push(url.href);
+      } catch (e) {
+        // Ignore invalid URLs
+      }
+    }
+  });
+
+  console.log(urls);
+
+  return urls;
+}
+
+

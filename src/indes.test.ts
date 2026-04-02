@@ -1,5 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { getHeadingFromHTML, getFirstParagraphFromHTML } from "./index";
+import {
+  getHeadingFromHTML,
+  getFirstParagraphFromHTML,
+  getURLsFromHTML,
+} from "./index";
 
 describe("getHeadingFromHTML", () => {
   test("returns h1 text when present", () => {
@@ -74,4 +78,74 @@ describe("getFirstParagraphFromHTML", () => {
   test("handles empty HTML string", () => {
     expect(getFirstParagraphFromHTML("")).toBe("");
   });
+});
+
+test("getURLsFromHTML absolute URLs", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <a href="https://example.com/page">Link</a>
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getURLsFromHTML(inputHTML, baseURL);
+  const expected = ["https://example.com/page"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getURLsFromHTML relative URLs", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <a href="/path/one">Link</a>
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getURLsFromHTML(inputHTML, baseURL);
+  const expected = ["https://crawler-test.com/path/one"];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getURLsFromHTML multiple links", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <a href="/one">One</a>
+        <a href="/two">Two</a>
+        <a href="https://example.com/three">Three</a>
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getURLsFromHTML(inputHTML, baseURL);
+  const expected = [
+    "https://crawler-test.com/one",
+    "https://crawler-test.com/two",
+    "https://example.com/three",
+  ];
+
+  expect(actual).toEqual(expected);
+});
+
+test("getURLsFromHTML ignores anchor without href", () => {
+  const inputHTML = `
+    <html>
+      <body>
+        <a>No href</a>
+      </body>
+    </html>
+  `;
+  const baseURL = "https://crawler-test.com";
+
+  const actual = getURLsFromHTML(inputHTML, baseURL);
+  const expected: string[] = [];
+
+  expect(actual).toEqual(expected);
 });
