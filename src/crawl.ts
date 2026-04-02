@@ -124,7 +124,7 @@ export function extractPageData(
   };
 }
 
-export async function getHTML(url: string) {
+export async function getHTML(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       headers: {
@@ -132,23 +132,67 @@ export async function getHTML(url: string) {
       },
     });
 
-    // Check for HTTP errors
     if (res.status >= 400) {
-      console.error(`Error: Received status code ${res.status}`);
-      return;
+      console.error(`Error: ${res.status}`);
+      return null;
     }
 
-    // Check content type
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("text/html")) {
-      console.error("Error: Response is not HTML");
-      return;
+      console.error("Error: Not HTML");
+      return null;
     }
 
-    // Get HTML body
-    const html = await res.text();
-    console.log(html);
-  } catch (error) {
-    console.error("Error fetching URL:", error);
+    return await res.text();
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    return null;
+  }
+}
+
+export async function crawlPage(
+  baseURL: string,
+  currentURL: string = baseURL,
+  pages: Record<string, number> = {},
+): Promise<Record<string, number>> {
+  try {
+    const base = new URL(baseURL);
+    const current = new URL(currentURL);
+
+    if (base.hostname !== current.hostname) {
+      return pages;
+    }
+
+    // 2. Normalize URL
+    const normalizedURL = normalizeURL(currentURL);
+
+    // 3. Track visits
+    if (pages[normalizedURL]) {
+      pages[normalizedURL]++;
+      return pages;
+    }
+
+    pages[normalizedURL] = 1;
+
+    console.log(`Crawling: ${currentURL}`);
+
+    // 4. Fetch HTML
+    const html = await getHTML(currentURL);
+    if (!html) {
+      return pages;
+    }
+
+    // 5. Extract URLs
+    const nextURLs = getURLsFromHTML(html, baseURL);
+
+    // 6. Recursively crawl
+    for (const nextURL of nextURLs) {
+      pages = await crawlPage(baseURL, nextURL, pages);
+    }
+
+    return pages;
+  } catch (err) {
+    console.error(`Error crawling ${currentURL}:`, err);
+    return pages;
   }
 }
