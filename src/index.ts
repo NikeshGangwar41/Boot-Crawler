@@ -1,5 +1,7 @@
-function main() {
-  const args = process.argv.slice(2); // Skip the first two arguments (node and script path)
+import { getHTML } from "./crawl";
+
+async function main() {
+  const args = process.argv.slice(2); // skip "node" and "src/index.ts"
 
   if (args.length < 1) {
     console.error("Error: No website provided");
@@ -13,6 +15,9 @@ function main() {
 
   const baseURL = args[0];
   console.log(`Starting crawl of: ${baseURL}`);
+
+  await getHTML(baseURL);
+
   process.exit(0);
 }
 

@@ -79,7 +79,6 @@ export function getURLsFromHTML(html: string, baseURL: string): string[] {
   return Array.from(urls);
 }
 
-
 export function getImagesFromHTML(html: string, baseURL: string): string[] {
   const dom = new JSDOM(html);
   const document = dom.window.document;
@@ -123,4 +122,33 @@ export function extractPageData(
     outgoing_links: getURLsFromHTML(html, pageURL),
     image_urls: getImagesFromHTML(html, pageURL),
   };
+}
+
+export async function getHTML(url: string) {
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "BootCrawler/1.0",
+      },
+    });
+
+    // Check for HTTP errors
+    if (res.status >= 400) {
+      console.error(`Error: Received status code ${res.status}`);
+      return;
+    }
+
+    // Check content type
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("text/html")) {
+      console.error("Error: Response is not HTML");
+      return;
+    }
+
+    // Get HTML body
+    const html = await res.text();
+    console.log(html);
+  } catch (error) {
+    console.error("Error fetching URL:", error);
+  }
 }
