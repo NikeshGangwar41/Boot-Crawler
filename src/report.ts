@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { ExtractedPageData } from "./crawl"; // adjust path if needed
+import { ExtractedPageData } from "./crawl"; 
 
 export function writeJSONReport(
   pageData: Record<string, ExtractedPageData>,
