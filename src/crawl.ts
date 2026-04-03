@@ -151,64 +151,19 @@ export async function getHTML(url: string): Promise<string | null> {
   }
 }
 
-export async function crawlPage(
-  baseURL: string,
-  currentURL: string = baseURL,
-  pages: Record<string, number> = {},
-): Promise<Record<string, number>> {
-  try {
-    const base = new URL(baseURL);
-    const current = new URL(currentURL);
 
-    if (base.hostname !== current.hostname) {
-      return pages;
-    }
-
-    // 2. Normalize URL
-    const normalizedURL = normalizeURL(currentURL);
-
-    // 3. Track visits
-    if (pages[normalizedURL]) {
-      pages[normalizedURL]++;
-      return pages;
-    }
-
-    pages[normalizedURL] = 1;
-
-    console.log(`Crawling: ${currentURL}`);
-
-    // 4. Fetch HTML
-    const html = await getHTML(currentURL);
-    if (!html) {
-      return pages;
-    }
-
-    // 5. Extract URLs
-    const nextURLs = getURLsFromHTML(html, baseURL);
-
-    // 6. Recursively crawl
-    for (const nextURL of nextURLs) {
-      pages = await crawlPage(baseURL, nextURL, pages);
-    }
-
-    return pages;
-  } catch (err) {
-    console.error(`Error crawling ${currentURL}:`, err);
-    return pages;
-  }
-}
 
 export async function crawlSiteAsync(
   baseURL: string,
   maxConcurrency: number = 3,
   maxPages: number = 50,
-): Promise<Record<string, number>> {
+): Promise<Record<string, ExtractedPageData>> {
   const crawler = new ConcurrentCrawler(baseURL, maxConcurrency, maxPages);
   return await crawler.crawl();
 }
 export class ConcurrentCrawler {
   private baseURL: string;
-  private pages: Record<string, number>;
+  private pages: Record<string, ExtractedPageData>;
   private limit: ReturnType<typeof pLimit>;
 
   private maxPages: number;
@@ -229,25 +184,20 @@ export class ConcurrentCrawler {
     this.allTasks = new Set();
   }
 
-  // Track page visits with count
+  // Returns true if this is a new page to visit, false if already visited or should stop
   private addPageVisit(normalizedURL: string): boolean {
-    if (this.shouldStop) {
-      return false;
-    }
+    if (this.shouldStop) return false;
 
     if (this.pages[normalizedURL]) {
-      this.pages[normalizedURL]++;
-      return false;
+      return false; // already visited
     }
 
-    // Check limit BEFORE adding new page
     if (Object.keys(this.pages).length >= this.maxPages) {
       this.shouldStop = true;
       console.log("Reached maximum number of pages to crawl.");
       return false;
     }
 
-    this.pages[normalizedURL] = 1;
     return true;
   }
 
@@ -273,13 +223,18 @@ export class ConcurrentCrawler {
       const html = await this.limit(() => getHTML(currentURL));
       if (!html || this.shouldStop) return;
 
-      const urls = getURLsFromHTML(html, this.baseURL);
+      // Extract full page data
+      const data = extractPageData(html, currentURL);
 
-      const promises = urls.map((url) => this.crawlPage(url));
+      // Store it
+      this.pages[normalizedURL] = data;
+
+      // Recurse using extracted links
+      const promises = data.outgoing_links.map((url) => this.crawlPage(url));
+
       await Promise.all(promises);
     })();
 
-    // Track task
     this.allTasks.add(task);
 
     task.finally(() => {
@@ -290,7 +245,7 @@ export class ConcurrentCrawler {
   }
 
   //  Entry point
-  public async crawl(): Promise<Record<string, number>> {
+  public async crawl(): Promise<Record<string, ExtractedPageData>> {
     await this.crawlPage(this.baseURL);
 
     // Wait for all active tasks to finish

@@ -19,11 +19,13 @@ async function main() {
   const pages = await crawlSiteAsync(baseURL, maxConcurrency, maxPages);
 
   console.log("\nCrawl result:");
-  for (const [url, count] of Object.entries(pages)) {
-    console.log(`${count} - ${url}`);
+  const firstPage = Object.values(pages)[0];
+  if (firstPage) {
+    console.log(
+      `First page record: ${firstPage["url"]} - ${firstPage["heading"]}`,
+    );
+    process.exit(0);
   }
-
-  process.exit(0);
 }
 
 main();
