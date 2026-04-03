@@ -151,8 +151,6 @@ export async function getHTML(url: string): Promise<string | null> {
   }
 }
 
-
-
 export async function crawlSiteAsync(
   baseURL: string,
   maxConcurrency: number = 3,
@@ -161,6 +159,7 @@ export async function crawlSiteAsync(
   const crawler = new ConcurrentCrawler(baseURL, maxConcurrency, maxPages);
   return await crawler.crawl();
 }
+
 export class ConcurrentCrawler {
   private baseURL: string;
   private pages: Record<string, ExtractedPageData>;
@@ -237,11 +236,11 @@ export class ConcurrentCrawler {
 
     this.allTasks.add(task);
 
+    await task;
+
     task.finally(() => {
       this.allTasks.delete(task);
     });
-
-    await task;
   }
 
   //  Entry point
